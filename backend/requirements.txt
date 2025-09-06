@@ -1,0 +1,8 @@
+flask
+pandas
+scikit-learn
+influxdb_client
+elasticsearch
+numpy
+seaborn
+joblib

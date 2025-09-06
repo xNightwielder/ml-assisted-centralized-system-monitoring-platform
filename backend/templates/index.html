@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem İzleme</title>
+    <style>
+        #model_tahmin {
+            font-size: 30px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/js/dataTables.min.js">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let currentRange = "5m";  // Varsayılan zaman aralığı
+        const urlParams = new URLSearchParams(window.location.search);
+        const hostname = urlParams.get("hostname");
+        async function fetchData() {
+            const response = await fetch(`/metrics/${currentRange}?hostname=${hostname}`, { cache: 'no-store' });
+            const data = await response.json();
+            sistemTahminiGuncelle("model_tahmin", data.model_tahmin);
+            updateTextPercent("cpu_user", data.cpu_user);
+            updateTextPercent("cpu_system", data.cpu_system);
+            updateTextPercent("cpu_idle", data.cpu_idle);
+            updateTextPercent("cpu_io", data.cpu_io);
+            updateTextGB("mem_total", data.mem_total);
+            updateTextGB("mem_used", data.mem_used);
+            updateTextGB("mem_available", data.mem_available);
+            updateTextPercent("mem_used_percent", data.mem_used_percent);
+            if(data.mem_cached.length != 0){
+                updateTextGB("mem_cached", data.mem_cached);
+            }
+            else {
+                updateTextGB("mem_cached", data.mem_cached_win);
+            }
+            
+            updateTextGB("swap_total", data.swap_total);
+            updateTextGB("swap_used", data.swap_used);
+            updateTextGB("swap_free", data.swap_free);
+            updateTextPercent("swap_used_percent", data.swap_used_percent);
+            updateTextGB("disk_total", data.disk_total);
+            updateTextGB("disk_used", data.disk_used);
+            updateTextGB("disk_free", data.disk_free);
+            updateTextPercent("disk_used_percent", data.disk_used_percent);
+            updateTextMBs("diskio_read", data.diskio_read);
+            updateTextMBs("diskio_write", data.diskio_write);
+            updateTextMBs("diskio_time", data.diskio_time);
+            updateTextLatency("diskio_ms", data.diskio_ms);
+            if(data.bytes_recv.length != 0){
+                updateTextMB("bytes_recv", data.bytes_recv);
+                updateTextMB("bytes_sent", data.bytes_sent);
+                updateTextDefault("packets_recv", data.packets_recv);
+                updateTextDefault("packets_sent", data.packets_sent);
+                updateTextDefault("err_in", data.err_in);
+                updateTextDefault("err_out", data.err_out);
+                updateTextDefault("drop_in", data.drop_in);
+                updateTextDefault("drop_out", data.drop_out);
+            }
+            else {
+                updateTextMB("bytes_recv", data.bytes_recv_persec);
+                updateTextMB("bytes_sent", data.bytes_sent_persec);
+                updateTextDefault("packets_recv", data.packets_recv_persec);
+                updateTextDefault("packets_sent", data.packets_sent_persec);
+                updateTextDefault("err_in", data.err_in_received);
+                updateTextDefault("err_out", data.err_out_outbound);
+                updateTextDefault("drop_in", data.drop_in_received);
+                updateTextDefault("drop_out", data.drop_out_outbound);
+            }
+            console.log(data.bytes_recv);
+            console.log(data.bytes_recv_persec);
+            
+            
+            updateTextDefault("load1", data.load1);
+            updateTextDefault("load5", data.load5);
+            updateTextDefault("load15", data.load15);
+            if(data.process_thread.length != 0) {
+                updateTextDefault("process_thread", data.process_thread);
+                updateTextDefault("process_total", data.process_total);
+                updateTextDefault("process_running", data.process_running);
+                updateTextDefault("process_blocked", data.process_blocked);
+                updateTextDefault("process_zombies", data.process_zombies);
+            }
+            else {
+                updateTextDefault("process_thread", data.process_thread_win);
+                updateTextDefault("process_total", data.process_total_win);
+                updateTextDefault("process_running", data.process_running_win);
+            }
+            
+            updateChartPercent(cpuUserChart, data.cpu_user, "Kullanıcı İşlemleri İçin Çekirdek Kullanımı");
+            updateChartPercent(cpuSystemChart, data.cpu_system, "Kernel İşlemleri İçin Çekirdek Kullanımı");
+            updateChartPercent(cpuIdleChart, data.cpu_idle, "Boşta Bekleyen CPU Yüzdesi");
+            updateChartPercent(cpuIoChart, data.cpu_io, "I/O İşlemleri Bekleyen CPU Yüzdesi");
+            updateChartGB(memTotalChart, data.mem_total, "Toplam Bellek");
+            updateChartGB(memUsedChart, data.mem_used, "Kullanılan Bellek");
+            updateChartGB(memAvailableChart, data.mem_available, "Kullanılabilir Bellek");
+            updateChartPercent(memUsedPercentChart, data.mem_used_percent, "Bellek Kullanım Yüzdesi");
+
+            if(data.mem_cached.length != 0){
+                updateChartGB(memCachedChart, data.mem_cached, "Önbelleğe Alınan Bellek");
+            }
+
+            else {
+                updateChartGB(memCachedChart, data.mem_cached_win, "Önbelleğe Alınan Bellek");
+            }
+            
+            updateChartGB(swapTotalChart, data.swap_total, "Toplam Swap Bellek");
+            updateChartGB(swapUsedChart, data.swap_used, "Kullanılan Swap Bellek");
+            updateChartGB(swapFreeChart, data.swap_free, "Kullanılabilir Swap Bellek");
+            updateChartPercent(swapUsedPercentChart, data.swap_used_percent, "Swap Kullanım Yüzdesi");
+            updateChartGB(diskTotalChart, data.disk_total, "Toplam Disk Alanı");
+            updateChartGB(diskUsedChart, data.disk_used, "Kullanılan Disk Alanı");
+            updateChartGB(diskFreeChart, data.disk_free, "Kullanılabilir Disk Alanı");
+            updateChartPercent(diskUsedPercentChart, data.disk_used_percent, "Kullanılan Disk Alanı Yüzdesi");
+            updateChartMBs(diskioReadChart, data.diskio_read, "Diskin Okuma Hızı");
+            updateChartMBs(diskioWriteChart, data.diskio_write, "Diskin Yazma Hızı");
+            updateChartMBs(diskioTimeChart, data.diskio_time, "Diskin giriş/çıkış İşlemleri İçin Harcadığı Toplam Süre");
+            updateChartLatency(diskioMsChart, data.diskio_read, "Disk İşlemlerinin Ortalama Gecikme Süresi");
+
+            if(data.bytes_recv.length != 0){
+                updateChartMB(bytesRecvChart, data.bytes_recv, "Alınan Veri");
+                updateChartMB(bytesSentChart, data.bytes_sent, "Gönderilen Veri");
+                updateChartDefault(packetsRecvChart, data.packets_recv, "Alınan Paket Sayısı");
+                updateChartDefault(packetsSentChart, data.packets_sent, "Gönderilen Paket Sayısı");
+                updateChartDefault(errInChart, data.err_in, "Gelen Veri Hataları");
+                updateChartDefault(errOutChart, data.err_out, "Giden Veri Hataları");
+                updateChartDefault(dropInChart, data.drop_in, "Düşen Gelen Paket Sayısı");
+                updateChartDefault(dropOutChart, data.drop_out, "Düşen Giden Paket Sayısı");
+            }
+
+            else {
+                updateChartMB(bytesRecvChart, data.bytes_recv_persec, "Alınan Veri");
+                updateChartMB(bytesSentChart, data.bytes_sent_persec, "Gönderilen Veri");
+                updateChartDefault(packetsRecvChart, data.packets_recv_persec, "Alınan Paket Sayısı");
+                updateChartDefault(packetsSentChart, data.packets_sent_persec, "Gönderilen Paket Sayısı");
+                updateChartDefault(errInChart, data.err_in_received, "Gelen Veri Hataları");
+                updateChartDefault(errOutChart, data.err_out_outbound, "Giden Veri Hataları");
+                updateChartDefault(dropInChart, data.drop_in_received, "Düşen Gelen Paket Sayısı");
+                updateChartDefault(dropOutChart, data.drop_out_outbound, "Düşen Giden Paket Sayısı");
+            }
+            
+            updateChartDefault(load1Chart, data.load1, "Son 1 Dakikadaki Sistem Yükü");
+            updateChartDefault(load5Chart, data.load5, "Son 5 Dakikadaki Sistem Yükü");
+            updateChartDefault(load15Chart, data.load15, "Son 15 Dakikadaki Sistem Yükü");
+
+            if(data.process_thread.length != 0) {
+                updateChartDefault(processThreadChart, data.process_thread, "İşlemlerin Oluşturduğu Thread Sayısı");
+                updateChartDefault(processTotalChart, data.process_total, "Sistemde Çalışan Toplam İşlem Sayısı");
+                updateChartDefault(processRunningChart, data.process_running, "Aktif Çalışan(CPU Kullanan) İşlem Sayısı");
+                updateChartDefault(processBlockedChart, data.process_blocked, "İşlem Yapamayan ve Kaynak Bekleyen İşlem Sayısı");
+                updateChartDefault(processZombiesChart, data.process_zombies, "Tamamlanmış Ama Sistemden Silinmeyen İşlem Sayısı");
+            }
+
+            else {
+                updateChartDefault(processThreadChart, data.process_thread_win, "İşlemlerin Oluşturduğu Thread Sayısı");
+                updateChartDefault(processTotalChart, data.process_total_win, "Sistemde Çalışan Toplam İşlem Sayısı");
+                updateChartDefault(processRunningChart, data.process_running_win, "Aktif Çalışan(CPU Kullanan) İşlem Sayısı");
+            }
+
+        }
+
+        function bytes_to_mbs(value) {
+            return Math.round(value / (1024 ** 2) * 100) / 100
+        }
+
+        function bytes_to_kb(value) {
+            return Math.round(value / 1024 * 100) / 100
+        }
+
+        function bytes_to_mb(value) {
+            return Math.round(value / (1024 ** 2) * 100) / 100
+        }
+
+        function bytes_to_gb(value) {
+            return Math.round(value / (1024 ** 3) * 100) / 100
+        }
+
+        function format_percentage(value){
+            return `${value.toFixed(2)}%`
+        }
+
+        function format_latency(value){
+            return `${value.toFixed(2)} ms`
+        }
+
+
+        function updateTextPercent(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = format_percentage(data[data.length - 1].value);
+            }
+        }
+
+        function updateTextLatency(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = format_latency(data[data.length - 1].value);
+            }
+        }
+
+        function updateTextGB(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = bytes_to_gb(data[data.length - 1].value) + 'GB';
+            }
+        }
+
+        function updateTextMB(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = bytes_to_mb(data[data.length - 1].value) + 'MB';
+            }
+        }
+
+        function updateTextKB(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = bytes_to_kb(data[data.length - 1].value) + 'KB';
+            }
+        }
+
+        function updateTextMBs(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = bytes_to_mbs(data[data.length - 1].value) + 'MB/s';
+            }
+        }
+
+        function updateTextDefault(elementId, data) {
+            if (data.length > 0) {
+                document.getElementById(elementId).innerText = data[data.length - 1].value;
+            }
+        }
+
+        function sistemTahminiGuncelle(elementId, data) {
+            let veri = data;
+            if (data == "boşta") {
+                document.getElementById(elementId).innerHTML = `<span style="color: #ebc777; font-weight: bold;">${veri.toUpperCase()}</span>`;
+                
+            }
+            else if (data == "normal") {
+                document.getElementById(elementId).innerHTML = `<span style="color: green; font-weight: bold;">${veri.toUpperCase()}</span>`;
+                
+            }
+            else if (data == "yüksek tehlike") {
+                document.getElementById(elementId).innerHTML = `<span style="color: orange; font-weight: bold;">${veri.toUpperCase()}</span>`;
+                
+            }
+            else {
+                document.getElementById(elementId).innerHTML = `<span style="color: red; font-weight: bold;">${veri.toUpperCase()}</span>`;
+                
+            }
+            
+        }
+
+        function updateChartPercent(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => parseFloat(format_percentage(d.value)));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartLatency(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => parseFloat(format_latency(d.value)));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartGB(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => bytes_to_gb(d.value));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartMB(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => bytes_to_mb(d.value));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartKB(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => bytes_to_kb(d.value));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartMBs(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => bytes_to_mbs(d.value));
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function updateChartDefault(chart, data, label) {
+            chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+            chart.data.datasets[0].data = data.map(d => d.value);
+            chart.data.datasets[0].label = label;
+            chart.update();
+        }
+
+        function changeRange(range) {
+            currentRange = range;
+            fetchData();
+        }
+
+        
+        
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch(`/logs?hostname=${hostname}`, { cache: 'no-store' });
+                const data = await response.json();
+                console.log(data);
+                populateTable(data);
+            }
+            catch (error) {
+                console.error("Verileri alırken hata oluştu:", error);
+            }
+            
+        }
+
+        
+
+        function populateTable(logs){
+            const tableBody = document.querySelector("#logTable tbody");
+            tableBody.innerHTML = "";
+            let i = 1;
+            logs.forEach(log => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                <th scope="row">${i}</th>
+                <td>${log.timestamp}</td>
+                <td>${log.host}</td>
+                <td>${log.program}</td>
+                <td>${log.programID}</td>
+                <td style ="white-space: pre-wrap;">${log.message}</td>
+               
+                `;
+                i+=1;
+                tableBody.appendChild(row);
+            })
+        }
+
+        let fetchDataInterval, fetchLogsInterval;
+
+        window.onload = function() {
+            fetchData();
+            fetchLogs();
+            if (fetchDataInterval) clearInterval(fetchDataInterval);
+            if (fetchLogsInterval) clearInterval(fetchLogsInterval);
+
+            fetchDataInterval = setInterval(fetchData, 10000);
+            fetchLogsInterval = setInterval(fetchLogs, 10000);
+        };
+        
+
+    </script>
+</head>
+<body>
+    <h1>Sistem İzleme Dashboard</h1>
+    <h2>Gösterilen Sistem: {{ hostname }}</h2>
+
+    <button onclick="changeRange('5m')">Son 5 Dakika</button>
+    <button onclick="changeRange('30m')">Son 30 Dakika</button>
+    <button onclick="changeRange('1h')">Son 1 Saat</button>
+    <button onclick="changeRange('3h')">Son 3 Saat</button>
+    <button onclick="changeRange('6h')">Son 6 Saat</button>
+    <button onclick="changeRange('12h')">Son 12 Saat</button>
+    <button onclick="changeRange('24h')">Son 24 Saat</button>
+
+    <p style="margin-top:25px"><strong>Sistem Durum Tahmini: </strong> <span id="model_tahmin">Yükleniyor...</span></p>
+
+    <p><strong>Kullanıcı İşlemleri İçin Çekirdek Kullanımı:</strong> <span id="cpu_user">Yükleniyor...</span></p>
+    <canvas id="cpuUserChart"></canvas>
+
+    <p><strong>Kernel İşlemleri İçin Çekirdek Kullanımı:</strong> <span id="cpu_system">Yükleniyor...</span></p>
+    <canvas id="cpuSystemChart"></canvas>
+
+    <p><strong>Boşta Bekleyen CPU Yüzdesi:</strong> <span id="cpu_idle">Yükleniyor...</span></p>
+    <canvas id="cpuIdleChart"></canvas>
+
+    <p><strong>I/O İşlemleri Bekleyen CPU Yüzdesi:</strong> <span id="cpu_io">Yükleniyor...</span></p>
+    <canvas id="cpuIoChart"></canvas>
+
+    <p><strong>Toplam Bellek:</strong> <span id="mem_total">Yükleniyor...</span></p>
+    <canvas id="memTotalChart"></canvas>
+
+    <p><strong>Kullanılan Bellek:</strong> <span id="mem_used">Yükleniyor...</span></p>
+    <canvas id="memUsedChart"></canvas>
+
+    <p><strong>Kullanılabilir Bellek:</strong> <span id="mem_available">Yükleniyor...</span></p>
+    <canvas id="memAvailableChart"></canvas>
+
+    <p><strong>Bellek Kullanım Yüzdesi:</strong> <span id="mem_used_percent">Yükleniyor...</span></p>
+    <canvas id="memUsedPercentChart"></canvas>
+
+    <p><strong>Önbelleğe Alınan Bellek:</strong> <span id="mem_cached">Yükleniyor...</span></p>
+    <canvas id="memCachedChart"></canvas>
+
+    <p><strong>Toplam Swap Bellek:</strong> <span id="swap_total">Yükleniyor...</span></p>
+    <canvas id="swapTotalChart"></canvas>
+
+    <p><strong>Kullanılan Swap Bellek:</strong> <span id="swap_used">Yükleniyor...</span></p>
+    <canvas id="swapUsedChart"></canvas>
+
+    <p><strong>Kullanılabilir Swap Bellek:</strong> <span id="swap_free">Yükleniyor...</span></p>
+    <canvas id="swapFreeChart"></canvas>
+
+    <p><strong>Swap Kullanım Yüzdesi:</strong> <span id="swap_used_percent">Yükleniyor...</span></p>
+    <canvas id="swapUsedPercentChart"></canvas>
+
+    <p><strong>Toplam Disk Alanı:</strong> <span id="disk_total">Yükleniyor...</span></p>
+    <canvas id="diskTotalChart"></canvas>
+
+    <p><strong>Kullanılan Disk Alanı:</strong> <span id="disk_used">Yükleniyor...</span></p>
+    <canvas id="diskUsedChart"></canvas>
+
+    <p><strong>Kullanılabilir Disk Alanı:</strong> <span id="disk_free">Yükleniyor...</span></p>
+    <canvas id="diskFreeChart"></canvas>
+
+    <p><strong>Kullanılan Disk Alanı Yüzdesi:</strong> <span id="disk_used_percent">Yükleniyor...</span></p>
+    <canvas id="diskUsedPercentChart"></canvas>
+
+    <p><strong>Diskin Okuma Hızı:</strong> <span id="diskio_read">Yükleniyor...</span></p>
+    <canvas id="diskioReadChart"></canvas>
+
+    <p><strong>Diskin Yazma Hızı:</strong> <span id="diskio_write">Yükleniyor...</span></p>
+    <canvas id="diskioWriteChart"></canvas>
+
+    <p><strong>Diskin giriş/çıkış İşlemleri İçin Harcadığı Toplam Süre:</strong> <span id="diskio_time">Yükleniyor...</span></p>
+    <canvas id="diskioTimeChart"></canvas>
+
+    <p><strong>Disk İşlemlerinin Ortalama Gecikme Süresi:</strong> <span id="diskio_ms">Yükleniyor...</span></p>
+    <canvas id="diskioMsChart"></canvas>
+
+    <p><strong>Alınan Veri:</strong> <span id="bytes_recv">Yükleniyor...</span></p>
+    <canvas id="bytesRecvChart"></canvas>
+
+    <p><strong>Gönderilen Veri:</strong> <span id="bytes_sent">Yükleniyor...</span></p>
+    <canvas id="bytesSentChart"></canvas>
+
+    <p><strong>Alınan Paket Sayısı:</strong> <span id="packets_recv">Yükleniyor...</span></p>
+    <canvas id="packetsRecvChart"></canvas>
+
+    <p><strong>Gönderilen Paket Sayısı:</strong> <span id="packets_sent">Yükleniyor...</span></p>
+    <canvas id="packetsSentChart"></canvas>
+
+    <p><strong>Gelen Veri Hataları:</strong> <span id="err_in">Yükleniyor...</span></p>
+    <canvas id="errInChart"></canvas>
+
+    <p><strong>Giden Veri Hataları:</strong> <span id="err_out">Yükleniyor...</span></p>
+    <canvas id="errOutChart"></canvas>
+
+    <p><strong>Düşen Gelen Paketler:</strong> <span id="drop_in">Yükleniyor...</span></p>
+    <canvas id="dropInChart"></canvas>
+
+    <p><strong>Düşen Giden Paketler:</strong> <span id="drop_out">Yükleniyor...</span></p>
+    <canvas id="dropOutChart"></canvas>
+
+    <p><strong>Son 1 Dakikadaki Sistem Yükü:</strong> <span id="load1">Yükleniyor...</span></p>
+    <canvas id="load1Chart"></canvas>
+
+    <p><strong>Son 5 Dakikadaki Sistem Yükü:</strong> <span id="load5">Yükleniyor...</span></p>
+    <canvas id="load5Chart"></canvas>
+
+    <p><strong>Son 15 Dakikadaki Sistem Yükü:</strong> <span id="load15">Yükleniyor...</span></p>
+    <canvas id="load15Chart"></canvas>
+
+    <p><strong>İşlemlerin Oluşturduğu Thread Sayısı:</strong> <span id="process_thread">Yükleniyor...</span></p>
+    <canvas id="processThreadChart"></canvas>
+
+    <p><strong>Sistemde Çalışan Toplam İşlem Sayısı:</strong> <span id="process_total">Yükleniyor...</span></p>
+    <canvas id="processTotalChart"></canvas>
+
+    <p><strong>Aktif Çalışan(CPU Kullanan) İşlem Sayısı:</strong> <span id="process_running">Yükleniyor...</span></p>
+    <canvas id="processRunningChart"></canvas>
+
+    <p><strong>(Sadece Linux İçin) İşlem Yapamayan ve Kaynak Bekleyen İşlem Sayısı:</strong> <span id="process_blocked">Yükleniyor...</span></p>
+    <canvas id="processBlockedChart"></canvas>
+
+    <p><strong>(Sadece Linux İçin) Tamamlanmış Ama Sistemden Silinmeyen İşlem Sayısı:</strong> <span id="process_zombies">Yükleniyor...</span></p>
+    <canvas id="processZombiesChart"></canvas>
+
+    <h2>Log Analizi Tablosu</h2>
+    
+        <table id="logTable" class="table">
+            <thead>
+                <tr>
+                    <th scope="col"># </th>
+                    <th scope="col">Tarih </th>
+                    <th scope="col">Host </th>
+                    <th scope="col">Program </th>
+                    <th scope="col">Program ID</th>
+                    <th scope="col">Mesaj</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    
+    
+
+    <script>
+       
+        const cpuUserChart = new Chart(document.getElementById('cpuUserChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanıcı İşlemleri İçin Çekirdek Kullanımı', data: [], borderColor: 'gray', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const cpuSystemChart = new Chart(document.getElementById('cpuSystemChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kernel İşlemleri İçin Çekirdek Kullanımı', data: [], borderColor: 'gray', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const cpuIdleChart = new Chart(document.getElementById('cpuIdleChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Boşta Bekleyen CPU Yüzdesi', data: [], borderColor: 'black', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const cpuIoChart = new Chart(document.getElementById('cpuIoChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'I/O İşlemleri Bekleyen CPU Yüzdesi', data: [], borderColor: 'cyan', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const memTotalChart = new Chart(document.getElementById('memTotalChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Toplam Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const memUsedChart = new Chart(document.getElementById('memUsedChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılan Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const memAvailableChart = new Chart(document.getElementById('memAvailableChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılabilir Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const memUsedPercentChart = new Chart(document.getElementById('memUsedPercentChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Bellek Kullanım Yüzdesi', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const memCachedChart = new Chart(document.getElementById('memCachedChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Önbelleğe Alınan Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const swapTotalChart = new Chart(document.getElementById('swapTotalChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Toplam Swap Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const swapUsedChart = new Chart(document.getElementById('swapUsedChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılan Swap Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const swapFreeChart = new Chart(document.getElementById('swapFreeChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılabilir Swap Bellek', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const swapUsedPercentChart = new Chart(document.getElementById('swapUsedPercentChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Swap Kullanım Yüzdesi', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskTotalChart = new Chart(document.getElementById('diskTotalChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Toplam Disk Alanı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskUsedChart = new Chart(document.getElementById('diskUsedChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılan Disk Alanı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskFreeChart = new Chart(document.getElementById('diskFreeChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılabilir Disk Alanı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskUsedPercentChart = new Chart(document.getElementById('diskUsedPercentChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Kullanılan Disk Alanı Yüzdesi', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskioReadChart = new Chart(document.getElementById('diskioReadChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Diskin Okuma Hızı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskioWriteChart = new Chart(document.getElementById('diskioWriteChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Diskin Yazma Hızı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskioTimeChart = new Chart(document.getElementById('diskioTimeChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Diskin giriş/çıkış İşlemleri İçin Harcadığı Toplam Süre', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const diskioMsChart = new Chart(document.getElementById('diskioMsChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Disk İşlemlerinin Ortalama Gecikme Süresi', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const bytesRecvChart = new Chart(document.getElementById('bytesRecvChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Alınan Veri', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const bytesSentChart = new Chart(document.getElementById('bytesSentChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Gönderilen Veri', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const packetsRecvChart = new Chart(document.getElementById('packetsRecvChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Alınan Paket Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const packetsSentChart = new Chart(document.getElementById('packetsSentChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Gönderilen Paket Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const errInChart = new Chart(document.getElementById('errInChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Gelen Veri Hataları', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const errOutChart = new Chart(document.getElementById('errOutChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Giden Veri Hataları', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const dropInChart = new Chart(document.getElementById('dropInChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Düşen Gelen Paketler', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const dropOutChart = new Chart(document.getElementById('dropOutChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Düşen Giden Paketler', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const load1Chart = new Chart(document.getElementById('load1Chart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Son 1 Dakikadaki Sistem Yükü', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const load5Chart = new Chart(document.getElementById('load5Chart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Son 5 Dakikadaki Sistem Yükü', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const load15Chart = new Chart(document.getElementById('load15Chart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Son 15 Dakikadaki Sistem Yükü', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const processThreadChart = new Chart(document.getElementById('processThreadChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'İşlemlerin Oluşturduğu Thread Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const processTotalChart = new Chart(document.getElementById('processTotalChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Sistemde Çalışan Toplam İşlem Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const processRunningChart = new Chart(document.getElementById('processRunningChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Aktif Çalışan(CPU Kullanan) İşlem Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const processBlockedChart = new Chart(document.getElementById('processBlockedChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'İşlem Yapamayan ve Kaynak Bekleyen İşlem Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        const processZombiesChart = new Chart(document.getElementById('processZombiesChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Tamamlanmış Ama Sistemden Silinmeyen İşlem Sayısı', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+
+        
+
+    </script>
+</body>
+</html>
