@@ -45,7 +45,7 @@ After installation, open the telegraf.conf and follow these steps:
   1. Find the [global_tags] section and add the line os_type = "the_operating_system_of_the_system_to_be_monitored" below it. 
      ```
         [global_tags]
-  	    os_type = "the_operating_system_of_the_system_to_be_monitored"
+  	      os_type = "the_operating_system_of_the_system_to_be_monitored"
      ```
   > [!WARNING]
   > The value of os_type must be either "linux" or "windows"
@@ -53,7 +53,7 @@ After installation, open the telegraf.conf and follow these steps:
   2. Find the [agent] section and add the line hostname = "the_hostname_of_the_system_to_be_monitored" below it.
      ```
         [agent]
-        hostname = "the_hostname_of_the_system_to_be_monitored"
+          hostname = "the_hostname_of_the_system_to_be_monitored"
      ```
   > [!IMPORTANT]
   > The hostname you enter to collect system metrics must be the same as the hostname you enter to collect logs.
@@ -71,7 +71,7 @@ After installation, open the telegraf.conf and follow these steps:
   4. (If you are using windows, you must follow this step) Find the [inputs.exec] section and add the line commands = ["powershell -ExecutionPolicy Bypass -File \"script_path""]
      ```
         [[inputs.exec]]
-        commands = ["powershell -ExecutionPolicy Bypass -File \"script_path""]
+          commands = ["powershell -ExecutionPolicy Bypass -File \"script_path""]
      ```
   > [!NOTE]
   > This script counts all processes running on Windows operating systems and works on telegraf. This script is located within the telegraf directory. You must specify the path to the ps1 extension script in the script_path section. 
