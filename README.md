@@ -33,8 +33,7 @@ A web platform that monitors system metrics on Linux and Windows systems and use
   docker compose up
 ```
 
-NOTES: 
-* The application's metrics on the running system come under the host name “telegraf”. To view them, you should enter “telegraf” in the hostname field.
+**_NOTE:_**  The application's metrics on the running system come under the host name “telegraf”. To view them, you should enter “telegraf” in the hostname field.
 
 ## Monitoring a different device on the local network
 
