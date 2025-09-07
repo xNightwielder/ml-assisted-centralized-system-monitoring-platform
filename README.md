@@ -56,7 +56,7 @@ After installation, open the telegraf.conf and follow these steps:
         hostname = "the_hostname_of_the_system_to_be_monitored"
      ```
   > [!IMPORTANT]
-  > The hostname you enter to collect system metrics must be the same as the hostname you enter to collect metrics.
+  > The hostname you enter to collect system metrics must be the same as the hostname you enter to collect logs.
 
   3. Find the [[outputs.influxdb_v2]] section and update this section according to the following code.
      ```
@@ -92,7 +92,7 @@ If you are using a Linux system, you should follow the steps below:
 	    tags: ["linux", "container"]
      ```
   > [!IMPORTANT]
-  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect logs.
+  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect metrics.
   4. Find the "output.logstash" section and add the line below it.
      ```
       output.logstash:
@@ -111,7 +111,7 @@ If you are using a Windows system, you should follow the steps below:
         tags: ["windows"]
      ```
   > [!IMPORTANT]
-  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect logs.
+  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect metrics.
   4. Find the "output.logstash" section add add the line below it.
      ```
 	output.logstash:
