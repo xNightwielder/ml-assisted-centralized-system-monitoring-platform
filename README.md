@@ -114,7 +114,7 @@ If you are using a Windows system, you should follow the steps below:
   > The hostname you enter to collect system logs must be the same as the hostname you enter to collect metrics.
   4. Find the "output.logstash" section add add the line below it.
      ```
-	output.logstash:
+		  output.logstash:
           hosts: ["your_main_host_ip:5044"]
      ```
 After all these settings, Winlogbeat is restarted and system logs become monitorable. The collected logs are transferred to the Kibana interface.
