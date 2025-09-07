@@ -33,7 +33,8 @@ A web platform that monitors system metrics on Linux and Windows systems and use
   docker compose up
 ```
 
-**_NOTE:_**  The application's metrics on the running system come under the host name “telegraf”. To view them, you should enter “telegraf” in the hostname field.
+> [!NOTE]
+> The application's metrics on the running system come under the host name “telegraf”. To view them, you should enter “telegraf” in the hostname field.
 
 ## Monitoring a different device on the local network
 
@@ -46,14 +47,16 @@ After installation, open the telegraf.conf and follow these steps:
         [global_tags]
   	    os_type = "the_operating_system_of_the_system_to_be_monitored"
      ```
-  IMPORTANT NOTE: The value of os_type must be either "linux" or "windows"
+  > [!WARNING]
+  > The value of os_type must be either "linux" or "windows"
   
   2. Find the [agent] section and add the line hostname = "the_hostname_of_the_system_to_be_monitored" below it.
      ```
         [agent]
         hostname = "the_hostname_of_the_system_to_be_monitored"
      ```
-  NOTE: You can access your device's metrics by entering the hostname you specified here into the hostname field on the application.
+  > [!IMPORTANT]
+  > The hostname you enter to collect system metrics must be the same as the hostname you enter to collect metrics.
 
   3. Find the [[outputs.influxdb_v2]] section and update this section according to the following code.
      ```
@@ -62,14 +65,16 @@ After installation, open the telegraf.conf and follow these steps:
          organization = "docs"
          bucket = "home"
      ```
-  NOTE: These variables are available in the .env file. If you want to change the variables, you can change them via the .env file.
+  > [!TIP]
+  > These variables are available in the .env file. If you want to change the variables, you can change them via the .env file.
 
   4. (If you are using windows, you must follow this step) Find the [inputs.exec] section and add the line commands = ["powershell -ExecutionPolicy Bypass -File \"script_path""]
      ```
         [[inputs.exec]]
         commands = ["powershell -ExecutionPolicy Bypass -File \"script_path""]
      ```
-  NOTE: This script counts all processes running on Windows operating systems and works on telegraf. This script is located within the telegraf directory. You must specify the path to the ps1 extension script in the script_path section. 
+  > [!NOTE]
+  > This script counts all processes running on Windows operating systems and works on telegraf. This script is located within the telegraf directory. You must specify the path to the ps1 extension script in the script_path section. 
 
 After all these settings, Telegram is restarted and system metrics become monitorable. The collected metrics are transferred to the InfluxDB database.
 
@@ -86,7 +91,8 @@ If you are using a Linux system, you should follow the steps below:
         name: your_hostname
 	    tags: ["linux", "container"]
      ```
-  IMPORTANT NOTE: The hostname you enter to collect system metrics must be the same as the hostname you enter to collect logs.
+  > [!IMPORTANT]
+  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect logs.
   4. Find the "output.logstash" section and add the line below it.
      ```
       output.logstash:
@@ -104,7 +110,8 @@ If you are using a Windows system, you should follow the steps below:
         name: "your_hostname"
         tags: ["windows"]
      ```
-  IMPORTANT NOTE: The hostname you enter to collect system metrics must be the same as the hostname you enter to collect logs.
+  > [!IMPORTANT]
+  > The hostname you enter to collect system logs must be the same as the hostname you enter to collect logs.
   4. Find the "output.logstash" section add add the line below it.
      ```
 	output.logstash:
