@@ -45,7 +45,7 @@ After installation, open the telegraf.conf and follow these steps:
   1. Find the [global_tags] section and add the line os_type = "the_operating_system_of_the_system_to_be_monitored" below it. 
      ```
         [global_tags]
-  	os_type = "the_operating_system_of_the_system_to_be_monitored"
+  	    os_type = "the_operating_system_of_the_system_to_be_monitored"
      ```
   IMPORTANT NOTE: The value of os_type must be either "linux" or "windows"
   
@@ -85,16 +85,15 @@ If you are using a Linux system, you should follow the steps below:
   3. Add the following lines to the top of the file.
      ```
         name: your_hostname
-	tags: ["linux", "container"]
+	    tags: ["linux", "container"]
      ```
   IMPORTANT NOTE: The hostname you enter to collect system metrics must be the same as the hostname you enter to collect logs.
   4. Find the "output.logstash" section and add the line below it.
      ```
-        output.logstash:
+      output.logstash:
   	  hosts: ["your_main_host_ip:5044"]
   	  user: "logstash_internal"
   	  password: "${LOGSTASH_INTERNAL_PASSWORD}"
-
      ```
 After all these settings, Filebeat is restarted and system logs become monitorable. The collected logs are transferred to the Kibana interface.
 
