@@ -121,13 +121,14 @@ After all these settings, Winlogbeat is restarted and system logs become monitor
 
 After all these settings, different devices on the local network can be monitored.
 
-> [!IMPORTANT]
-> If you running to application at WSL2 and you want to monitoring a different device, you should make portproxy for running application services. For example, InfluxDB service use 8086 port. \n
-> You should perform port proxy operations on ports 8086 (InfluxDB), 5000 (Web Application Port), 9200 (Elasticsearch), 5601 (Kibana), and 5044 (Logstash) on the device you wish to monitor. Below is a demonstration of how to perform this operation. \n
-> netsh interface portproxy add v4tov4 listenport=8086 listenaddress=0.0.0.0 connectport=8086 connectaddress=your_wsl2_ip;\n
-> netsh interface portproxy add v4tov4 listenport=5000 listenaddress=0.0.0.0 connectport=5000 connectaddress=your_wsl2_ip;\n
-> netsh interface portproxy add v4tov4 listenport=9200 listenaddress=0.0.0.0 connectport=9200 connectaddress=your_wsl2_ip;\n
-> netsh interface portproxy add v4tov4 listenport=5601 listenaddress=0.0.0.0 connectport=5601 connectaddress=your_wsl2_ip;\n
-> netsh interface portproxy add v4tov4 listenport=5044 listenaddress=0.0.0.0 connectport=5044 connectaddress=your_wsl2_ip;\n
-
+### Important
+ If you running to application at WSL2 and you want to monitoring a different device, you should make ####portproxy for running application services. For example, InfluxDB service use 8086 port.
+ You should perform port proxy operations on ports 8086 (InfluxDB), 5000 (Web Application Port), 9200 (Elasticsearch), 5601 (Kibana), and 5044 (Logstash) on the device you wish to monitor. Below is a demonstration of how to perform this operation:
+ ```
+ 	netsh interface portproxy add v4tov4 listenport=8086 listenaddress=0.0.0.0 connectport=8086 connectaddress=your_wsl2_ip;\n
+ 	netsh interface portproxy add v4tov4 listenport=5000 listenaddress=0.0.0.0 connectport=5000 connectaddress=your_wsl2_ip;\n
+ 	netsh interface portproxy add v4tov4 listenport=9200 listenaddress=0.0.0.0 connectport=9200 connectaddress=your_wsl2_ip;\n
+ 	netsh interface portproxy add v4tov4 listenport=5601 listenaddress=0.0.0.0 connectport=5601 connectaddress=your_wsl2_ip;\n
+ 	netsh interface portproxy add v4tov4 listenport=5044 listenaddress=0.0.0.0 connectport=5044 connectaddress=your_wsl2_ip;\n
+```
 
