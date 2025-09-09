@@ -131,4 +131,5 @@ After all these settings, different devices on the local network can be monitore
  	netsh interface portproxy add v4tov4 listenport=5601 listenaddress=0.0.0.0 connectport=5601 connectaddress=your_wsl2_ip;
  	netsh interface portproxy add v4tov4 listenport=5044 listenaddress=0.0.0.0 connectport=5044 connectaddress=your_wsl2_ip;
 ```
-Sometimes, despite making these settings, you may not be able to access the service ports. You may need to delete the settings and make them again. This situation can happen frequently. You can use [](this script) for these like situations. This script creates a port proxy and security rule based on the ports you specify and the IP address you wish to redirect to. Through the same script, you can delete the port proxy and security rules you have created.
+> [!NOTE]
+> Sometimes, despite making these settings, you may not be able to access the service ports. You may need to delete the settings and make them again. This situation can happen frequently. You can use [](this script) for these like situations. This script creates a port proxy and security rule based on the ports you specify and the IP address you wish to redirect to. Through the same script, you can delete the port proxy and security rules you have created.
